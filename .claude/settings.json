@@ -10,6 +10,16 @@
             "timeout": 600
           }
         ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = true ]; then bash \"$CLAUDE_PROJECT_DIR/scripts/setup.sh\"; fi",
+            "timeout": 600
+          }
+        ]
       }
     ]
   }

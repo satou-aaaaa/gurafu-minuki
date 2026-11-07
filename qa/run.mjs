@@ -31,6 +31,7 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
     if (!P.ans.every((a) => a === "ok" || a === "t" || a === "n" || zs.has(a))) no(k.id, "答えの所が押せない");
     if (["bar", "line"].includes(S.type) && (Math.max(...S.vals) > S.ymax || S.ticks[0] !== S.ymin || S.ticks[S.ticks.length - 1] !== S.ymax)) no(k.id, "目盛りの外に出る");
     if (S.type === "pie" && S.pcts.some((v) => !(v > 0))) no(k.id, "円に0以下");
+    if (/^(人|店|か所|台|個|本|冊|杯|束)$/.test(P.unit) && [S, P.fixUnit ? null : F].some((g) => g && g.vals && g.vals.some((v) => !Number.isInteger(v)))) no(k.id, "数える物（店・か所など）に小数");
     switch (k.id) {
       case "cut": { const mx = Math.max(...S.vals), mn = Math.min(...S.vals), vis = (mx - S.ymin) / (mn - S.ymin), said = +P.head.match(/の(\d+)倍/)[1];
         if (!(S.wave && S.ymin > 0 && S.ymin < mn)) no(k.id, "波線で省いていない");
@@ -144,6 +145,8 @@ try {
   const p = await newPage();
   check("はじめて開くと遊び方が出る", await p.locator("#howto[open]").count() === 1);
   await p.click("#howto-ok");
+  { const q = await newPage(); await q.keyboard.press("Escape"); await q.waitForTimeout(100); await q.reload(); await q.waitForTimeout(150);
+    check("遊び方は Esc で閉じても次から出ない", await q.locator("#howto[open]").count() === 0); await q.context().close(); }
   check("ホームに見抜くポイントと、上級・とことん・練習が最初からある", (await p.textContent(".points")).includes("0から") && await p.locator("#go-h:not([disabled])").count() === 1 && await p.locator("#go-e").count() === 1 && await p.locator("#go-p").count() === 1);
   await p.click("#go-d");
   const tags = await p.evaluate(() => __gm.load().runs.d.list);
@@ -155,7 +158,7 @@ try {
   await p.reload(); await p.waitForTimeout(150); await p.click("#go-d");
   check("開き直しても、まちがえた所は残る（続きから）", (await curOf(p)).wrong.length === 1 && await p.locator(".ng").count() >= 1);
   await solve(p);
-  check("見抜くと手口の名前・なぜ・本当は・直したグラフ・出どころが出る", (await p.textContent(".verdict")).includes("本当は") && await p.locator(".verdict .srcs a").count() >= 1 && (await curOf(p)).ok || await p.locator(".verdict .fixbox svg").count() === 1);
+  check("見抜くと手口の名前・なぜ・本当は・直したグラフ・出どころが出る", (await p.textContent(".verdict")).includes("本当は") && await p.locator(".verdict .srcs a").count() >= 1 && ((await curOf(p)).ok || await p.locator(".verdict .fixbox svg").count() === 1));
   check("まちがい1回で★2", (await p.textContent(".verdict .stars")).startsWith("★★☆"));
   await p.click("#next");
   // 2問目：ヒント2回
@@ -164,6 +167,8 @@ try {
   await p.click("#hint");
   const left = await p.$$eval("[data-z]:not([disabled])", (b) => new Set(b.map((x) => x.dataset.z)).size);
   check("ヒント2：のこりを2つにしぼる", left === 2, left);
+  check("ヒント2：「のこりはNつ」が押せる数と同じ", (await p.textContent("#hintbox")).includes(`のこりは${left}つ`), await p.textContent("#hintbox"));
+  check("問題の画面にも見やすさの設定を開くボタン（Aa）がある", await p.locator(".a11y-float:visible").count() === 1);
   await solve(p);
   check("ヒント2回で★1", (await p.textContent(".verdict .stars")).startsWith("★☆☆"));
   await p.click("#next");
@@ -172,7 +177,7 @@ try {
   check("5問で結果へ・今日の記録がつく・手口帳に載る", (await p.textContent(".big")).length > 0 && s1.days[TODAY] && s1.days[TODAY].m.join() === "1,2,0,0,0" && Object.keys(s1.dex).length >= 1);
   const share = await p.textContent(".share");
   const heads = tags.map((t) => G.make(t)).flatMap((P) => [P.head, P.title]);
-  check("シェアの文に見出し・題名（答え）を出さない", share.includes("第1回") || share.includes("第") && !heads.some((h) => share.includes(h)), share);
+  check("シェアの文に見出し・題名（答え）を出さない", share.includes("第") && !heads.some((h) => share.includes(h)), share);
   check("まちがいのある日は Ko-fi の1行を出さない", await p.locator(".kofi").count() === 0);
   check("結果の画面に「続けて遊ぶ：とことん」", await p.locator("#go-e").count() === 1);
   check("結果の画面に「あと少しの実績」1つ", await p.locator("#achnext").count() <= 1);

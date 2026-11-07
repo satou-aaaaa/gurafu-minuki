@@ -12,8 +12,9 @@
   const fmt = (v) => { const r = Math.round(v * 10) / 10, s = String(Math.abs(r) >= 100 ? Math.round(r) : r); const [i, d] = s.split("."); return i.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (d ? "." + d : ""); };
   const r1 = (v) => Math.round(v * 10) / 10;
   const roundTo = (v, step) => Math.round(v / step) * step;
-  const stepOf = (v) => (v < 100 ? 0.1 : magOf(v));
-  const roundS = (v, S) => { const st = stepOf(S); return st < 1 ? Math.round(v * 10) / 10 : roundTo(v, st); };
+  const CNT = /^(人|店|か所|台|個|本|冊|杯|束)$/;
+  const stepOf = (v, u) => (v < 100 ? (CNT.test(u || "") ? 1 : 0.1) : magOf(v));
+  const roundS = (v, S, u) => { const st = stepOf(S, u); return st < 1 ? Math.round(v * 10) / 10 : roundTo(v, st); };
   const magOf = (v) => (v >= 5000 ? 100 : v >= 1000 ? 10 : v >= 200 ? 5 : 1);
   // 目盛りの幅：きりのよい数（1・2・2.5・5 の10のべき）
   function niceStep(range, n = 4) { const raw = range / n, mag = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 2.5, 5, 10]) if (m * mag >= raw - 1e-9) return m * mag; return 10 * mag; }
@@ -129,15 +130,15 @@
     },
     period(R) {
       const [title, unit, lo, hi] = pick(R, LINE), N = 12, S = ri(R, lo, hi), bot = ri(R, 55, 70) / 100, endR = ri(R, 72, 85) / 100, vals = [];
-      for (let i = 0; i < N; i++) { const f = i <= 7 ? 1 - (1 - bot) * (i / 7) : bot + (endR - bot) * ((i - 7) / 4); vals.push(Math.max(0.1, roundS(S * f * (1 + ri(R, -15, 15) / 1000), S))); }
-      for (let i = 8; i < N; i++) if (vals[i] <= vals[i - 1]) vals[i] = roundS(vals[i - 1] + stepOf(S), S);
+      for (let i = 0; i < N; i++) { const f = i <= 7 ? 1 - (1 - bot) * (i / 7) : bot + (endR - bot) * ((i - 7) / 4); vals.push(Math.max(0.1, roundS(S * f * (1 + ri(R, -15, 15) / 1000), S, unit))); }
+      for (let i = 8; i < N; i++) if (vals[i] <= vals[i - 1]) vals[i] = roundS(vals[i - 1] + stepOf(S, unit), S, unit);
       const yrs = YEARS(2024, N), sh = 4, sv = vals.slice(N - sh), ax = axis(0, Math.max(...sv)), fx = axis(0, Math.max(...vals)), drop = Math.round((1 - vals[N - 1] / vals[0]) * 100);
       return { title, unit, head: `${title}は増え続けている！`, spec: { type: "line", cats: yrs.slice(N - sh), vals: sv, ...ax }, fix: { type: "line", cats: yrs, vals, ...fx },
         note: "数字は架空です。", real: `この${sh - 1}年は増えていますが、${yrs[0]}からの${N - 1}年で見ると${drop}%へっています。` };
     },
     ok1(R) {
       const [title, unit, lo, hi] = pick(R, LINE), N = 12, S = ri(R, lo, hi), up = R() < 0.5, g = ri(R, 15, 45) / 100, vals = [];
-      for (let i = 0; i < N; i++) vals.push(Math.max(0.1, roundS(S * (1 + (up ? g : -g) * (i / (N - 1))) * (1 + ri(R, -20, 20) / 1000), S)));
+      for (let i = 0; i < N; i++) vals.push(Math.max(0.1, roundS(S * (1 + (up ? g : -g) * (i / (N - 1))) * (1 + ri(R, -20, 20) / 1000), S, unit)));
       const yrs = YEARS(2024, N), ax = axis(0, Math.max(...vals)), p = Math.round(Math.abs(vals[N - 1] / vals[0] - 1) * 100);
       return { title, unit, head: `${title}は${N - 1}年で${p}%${up ? "増えた" : "へった"}`, spec: { type: "line", cats: yrs, vals, ...ax }, fix: null, note: "数字は架空です。",
         real: `${yrs[0]}は${fmt(vals[0])}${unit}、${yrs[N - 1]}は${fmt(vals[N - 1])}${unit}。見出しどおりです。` };
@@ -160,9 +161,9 @@
         fixNote: `町の人から${fmt(N)}人を、かたよりなく選んで聞いた場合（架空）。`, real: `${group}${n}人だけの答えです。かたよりなく${fmt(N)}人に聞くと、満足は${p2}%でした（架空）。` };
     },
     cutl(R) {
-      const [title, unit, lo, hi] = pick(R, LINE.filter((x) => x[2] >= 20)), N = 6, S = ri(R, lo, hi), g = ri(R, 4, 10) / 100, vals = [];
-      for (let i = 0; i < N; i++) vals.push(Math.max(0.1, roundS(S * (1 + g * (i / (N - 1))) * (1 + ri(R, -8, 8) / 1000), S)));
-      for (let i = 1; i < N; i++) if (vals[i] <= vals[i - 1]) vals[i] = roundS(vals[i - 1] + stepOf(S), S);
+      const [title, unit, lo, hi] = pick(R, LINE.filter((x) => x[2] >= 20)), N = 6, S = ri(R, CNT.test(unit) ? Math.max(lo, 80) : lo, hi), g = ri(R, 4, 10) / 100, vals = [];
+      for (let i = 0; i < N; i++) vals.push(Math.max(0.1, roundS(S * (1 + g * (i / (N - 1))) * (1 + ri(R, -8, 8) / 1000), S, unit)));
+      for (let i = 1; i < N; i++) if (vals[i] <= vals[i - 1]) vals[i] = roundS(vals[i - 1] + stepOf(S, unit), S, unit);
       const mn = Math.min(...vals), mx = Math.max(...vals), fx = axis(0, mx), yrs = YEARS(2024, N); let ax = axis(mn, mx);
       for (let n = 5; ax.ymin <= 0 && n <= 10; n++) ax = axis(mn, mx, n);
       const p = Math.round((vals[N - 1] / vals[0] - 1) * 100);

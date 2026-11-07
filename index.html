@@ -467,10 +467,11 @@ function toast(t) { const d = document.createElement("div"); d.className = "toas
 const buzz = (n = 12) => { try { if (!(window.A11y && A11y.on("calm"))) navigator.vibrate && navigator.vibrate(n); } catch (e) {} };
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 const toTop = () => window.scrollTo(0, 0);
-const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" id="f-about">このゲームについて</a><a href="#" data-a11y-open>見やすさ</a><a href="#" data-hk>引き継ぎ</a><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
+const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" id="f-about">このゲームについて</a><a href="#" data-hk>引き継ぎ</a><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; const a = $("f-about"); if (a) a.onclick = (e) => { e.preventDefault(); about(); }; }
 function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
 $("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
+$("howto").addEventListener("close", () => save((s) => { s.tut = true; }));
 // 見抜くポイント（東京都・岡山県・島根県・総務省統計局の資料から）
 const POINTS = ["縦の目盛りは0から？（波線で省いていない？）", "期間を都合よく切り取っていない？", "絵の大きさは面積で比べている？", "円グラフの%を足すと100%？", "だれに、何人に聞いた？ 件数？ 割合？"];
 
@@ -589,7 +590,7 @@ function play() {
   paint();
   toTop();
 }
-// ヒント2：まちがいの所を消して、2つまでにしぼる（消す順は 縦→横→形→題名→注記→ウソは無い）
+// ヒント2：まちがいの所を消して、答えのほかは1つだけ残す（消す順は 縦→横→形→題名→注記→ウソは無い）
 const cutOf = () => { if (cur.hints < 2) return []; const ch = choicesOf(cur.P), left = ch.filter((z) => !cur.P.ans.includes(z) && !cur.wrong.includes(z)); return left.slice(0, Math.max(0, left.length - 1)); };
 function paint() {
   const cut = cutOf();
@@ -600,7 +601,7 @@ function paint() {
     b.setAttribute("aria-label", base + (ng ? "（ちがう）" : c ? "（ヒントで消した）" : ""));
   });
   const h = $("hint"); if (h) h.disabled = cur.done || cur.hints >= 2;
-  $("hintbox").innerHTML = cur.hints && !cur.done ? `<div class="hint" role="status">💡 ${esc(cur.P.look)}${cur.hints >= 2 ? "<br>💡 ちがう所を消しました。のこりは2つです。" : ""}</div>` : "";
+  $("hintbox").innerHTML = cur.hints && !cur.done ? `<div class="hint" role="status">💡 ${esc(cur.P.look)}${cur.hints >= 2 ? `<br>💡 ちがう所を消しました。のこりは${choicesOf(cur.P).filter((z) => !cur.wrong.includes(z) && !cut.includes(z)).length}つです。` : ""}</div>` : "";
 }
 function hint() { if (cur.done || cur.hints >= 2) return; cur.hints++; keep(); paint(); }
 function choose(z, el) {
