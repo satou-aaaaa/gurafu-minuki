@@ -29,4 +29,5 @@ jobs:
       # （2026-11-04 incidents/2026-11-04-link-check-readme-only-main.md）
       files: '*.html README.md'
       # 自分たちの公開ページ（*.github.io）は各リポジトリの site-watch が毎日見張る。初めて公開する前の PR では 404 になるので、ここでは調べない
-      exclude: '^https://satou-aaaaa\.github\.io/'
+      # 東京都の統計のサイトは GitHub の実行機からだと 404 を返す（ふつうに開くと 200。2026-11-07 確かめた）ので調べない
+      exclude: '^https://satou-aaaaa\.github\.io/ ^https://www\.toukei\.metro\.tokyo\.lg\.jp/'
