@@ -471,7 +471,7 @@ const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" id
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; const a = $("f-about"); if (a) a.onclick = (e) => { e.preventDefault(); about(); }; }
 function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
 $("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
-$("howto").addEventListener("close", () => save((s) => { s.tut = true; }));
+$("howto").addEventListener("close", () => { if (!load().tut) save((s) => { s.tut = true; }); });
 // 見抜くポイント（東京都・岡山県・島根県・総務省統計局の資料から）
 const POINTS = ["縦の目盛りは0から？（波線で省いていない？）", "期間を都合よく切り取っていない？", "絵の大きさは面積で比べている？", "円グラフの%を足すと100%？", "だれに、何人に聞いた？ 件数？ 割合？"];
 
