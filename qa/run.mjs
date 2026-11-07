@@ -8,6 +8,7 @@ import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { checkTransfer } from "./transfer-check.mjs";
+import { checkSwStall } from "./sw-check.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const results = [];
@@ -103,6 +104,7 @@ check("引き継ぎ：transfer.js をゲームの script より前に、この�
   check("感想フォームは名前・メールを聞かない", !/id: (name|email|mail)/.test(fy)); }
 check("README の URL のすぐ後ろに全角の字を続けない（Link check が URL の一部と読む）", !/https?:\/\/[\x21-\x7e]*[^\x00-\x7f]/.test(readFileSync(path.join(root, "README.md"), "utf8").replace(/\]\(https?:\/\/[^)\s]+\)/g, "").replace(/<https?:\/\/[^>\s]+>/g, "")));
 { const sw = readFileSync(path.join(root, "sw.js"), "utf8"), mf = JSON.parse(readFileSync(path.join(root, "manifest.webmanifest"), "utf8"));
+  { const st = await checkSwStall(sw); check("PWA：通信が止まっても4秒ほどで保存した画面に切り替わり、少しずつ届く受信は待ち、何も無ければ60秒で返す（shared-workflows template/qa/sw-check.mjs）", st.ok, JSON.stringify(st)); }
   const shell = JSON.parse(sw.match(/SHELL = (\[[^\]]+\])/)[1]);
   check("PWA：sw.js は画面のファイルを全部保存し（引き継ぎの transfer.js も）、取り直して入れ、外へ何も送らない", ["./index.html", "./gen.js", "./transfer.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"].every((f) => shell.includes(f)) && /cache: "reload"/.test(sw) && !/https?:\/\//.test(sw.replace(/^\/\/.*$/gm, "")));
   check("PWA：manifest にアイコン2つと名前がある", mf.name === "グラフのウソ見抜き" && mf.icons.length >= 2 && mf.start_url === "./"); }
@@ -180,12 +182,17 @@ try {
   check("ヒント2：のこりを2つにしぼる", left === 2, left);
   check("ヒント2：「のこりはNつ」が押せる数と同じ", (await p.textContent("#hintbox")).includes(`のこりは${left}つ`), await p.textContent("#hintbox"));
   check("問題の画面にも見やすさの設定を開くボタン（Aa）がある", await p.locator(".a11y-float:visible").count() === 1);
+  await p.evaluate(() => { const c = __gm.cur(); [...document.querySelectorAll("[data-z]:not([disabled])")].find((b) => !c.P.ans.includes(b.dataset.z)).click(); });
+  await p.waitForTimeout(50);
+  { const n = await p.$$eval("[data-z]:not([disabled])", (b) => new Set(b.map((x) => x.dataset.z)).size);
+    check("ヒント2のあとに残ったまちがいを押すと、答えだけが残る（消した所が戻らない。shared-workflows incidents/2026-11-07-hint-cut-comes-back.md）", n === 1, n); }
   await solve(p);
   check("ヒント2回で★1", (await p.textContent(".verdict .stars")).startsWith("★☆☆"));
   await p.click("#next");
+  check("次の問題へ進むと、フォーカスが問題（#head）に移る", await p.evaluate(() => document.activeElement && document.activeElement.id) === "head");
   for (let i = 2; i < 5; i++) { await solve(p); await p.click("#next"); }
   const s1 = await mem(p);
-  check("5問で結果へ・今日の記録がつく・手口帳に載る", (await p.textContent(".big")).length > 0 && s1.days[TODAY] && s1.days[TODAY].m.join() === "1,2,0,0,0" && Object.keys(s1.dex).length >= 1);
+  check("5問で結果へ・今日の記録がつく・手口帳に載る", (await p.textContent(".big")).length > 0 && s1.days[TODAY] && s1.days[TODAY].m.join() === "1,3,0,0,0" && Object.keys(s1.dex).length >= 1);
   const share = await p.textContent(".share");
   const heads = tags.map((t) => G.make(t)).flatMap((P) => [P.head, P.title]);
   check("シェアの文に見出し・題名（答え）を出さない", share.includes("第") && !heads.some((h) => share.includes(h)), share);
