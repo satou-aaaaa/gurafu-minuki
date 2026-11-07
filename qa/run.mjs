@@ -31,7 +31,7 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
     if (!P.ans.every((a) => a === "ok" || a === "t" || a === "n" || zs.has(a))) no(k.id, "答えの所が押せない");
     if (["bar", "line"].includes(S.type) && (Math.max(...S.vals) > S.ymax || S.ticks[0] !== S.ymin || S.ticks[S.ticks.length - 1] !== S.ymax)) no(k.id, "目盛りの外に出る");
     if (S.type === "pie" && S.pcts.some((v) => !(v > 0))) no(k.id, "円に0以下");
-    if (/^(人|店|か所|台|個|本|冊|杯|束)$/.test(P.unit) && [S, P.fixUnit ? null : F].some((g) => g && g.vals && g.vals.some((v) => !Number.isInteger(v)))) no(k.id, "数える物（店・か所など）に小数");
+    if (/^(人|店|か所|台|個|本|冊|杯|束)$/.test(P.unit) && [S, P.fixUnit ? null : F].filter(Boolean).flatMap((g) => [g, ...(g.sub || [])]).some((g) => g.vals && g.vals.some((v) => !Number.isInteger(v)))) no(k.id, "数える物（店・か所など）に小数");
     switch (k.id) {
       case "cut": { const mx = Math.max(...S.vals), mn = Math.min(...S.vals), vis = (mx - S.ymin) / (mn - S.ymin), said = +P.head.match(/の(\d+)倍/)[1];
         if (!(S.wave && S.ymin > 0 && S.ymin < mn)) no(k.id, "波線で省いていない");
