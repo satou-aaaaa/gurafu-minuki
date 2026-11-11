@@ -631,11 +631,12 @@ function paint() {
   const h = $("hint"); if (h) h.disabled = cur.done || cur.hints >= 2;
   $("hintbox").innerHTML = cur.hints && !cur.done ? `<div class="hint" role="status">💡 ${esc(cur.P.look)}${cur.hints >= 2 ? `<br>💡 ちがう所を消しました。のこりは${choicesOf(cur.P).filter((z) => !cur.wrong.includes(z) && !cut.includes(z)).length}つです。` : ""}</div>` : "";
 }
-function hint() { if (cur.done || cur.hints >= 2) return; if (cur.step === 2) { if (cur.h2) return; cur.h2 = 1; cur.hints++; keep(); return paintWhy(); } cur.hints++; keep(); paint(); }
+function hint() { if (cur.done || cur.hints >= 2) return; if (cur.step === 2) { if (cur.h2 || !left2Of().length) return; cur.h2 = 1; cur.hints++; keep(); return paintWhy(); } cur.hints++; keep(); paint(); }
 // 2段目：ウソを見抜いたら「どんな手口？」を3つから選ぶ（shared-workflows routines/game-dev.md「1問を深くする」）
 const GK = Object.keys(G.GROUPS);
 // 2段目のヒント：ちがう分け方を1つ消す（消すのは決まった1つ。まちがいの数で変えない）
-const cut2Of = () => (cur.h2 ? [GK.filter((x) => x !== cur.P.grp)[0]] : []);
+const left2Of = () => GK.filter((x) => x !== cur.P.grp && !cur.w2.includes(x));
+const cut2Of = () => (cur.h2 ? left2Of().slice(0, 1) : []);
 function askWhy() {
   const P = cur.P;
   document.querySelectorAll("[data-z]").forEach((b) => { b.disabled = true; b.classList.remove("cut"); if (P.ans.includes(b.dataset.z)) { b.classList.remove("ng"); b.classList.add("hit"); } });
@@ -648,7 +649,7 @@ function askWhy() {
 function paintWhy() {
   const cut = cut2Of();
   document.querySelectorAll(".why button").forEach((b) => { const x = b.dataset.g, ng = cur.w2.includes(x) || cut.includes(x); b.classList.toggle("ng", ng); b.disabled = ng || cur.done; b.setAttribute("aria-label", G.GROUPS[x].name + (ng ? "（ちがう）" : "")); });
-  const h = $("hint"); if (h) h.disabled = cur.done || cur.hints >= 2 || !!cur.h2;
+  const h = $("hint"); if (h) h.disabled = cur.done || cur.hints >= 2 || !!cur.h2 || !left2Of().length;
   $("hintbox").innerHTML = cur.h2 && !cur.done ? `<div class="hint" role="status">💡 ちがう分け方を1つ消しました。</div>` : "";
 }
 function chooseWhy(x) {

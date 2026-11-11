@@ -315,6 +315,7 @@ try {
     check("2段目でまちがえると ✕ ちがう（破線）・もう一度選べる", await q.locator(".why button.ng").count() === 1 && (await q.textContent("#msg")).includes("✕"));
     await q.click("#hint");
     const ng1 = await q.locator(".why button:disabled").count();
+    check("2段目のヒントは、まちがえた分け方とは別のちがう分け方を消す（★を使って何も消えないことが無い。2026-11-11 CodeRabbit）", ng1 === 2 && await q.locator(".why button:not(:disabled)").count() === 1, ng1);
     await q.reload(); await q.waitForTimeout(150); await q.evaluate(() => __gm.play("p"));
     check("2段目のヒントで消した分け方は、閉じて開き直しても消えたまま（ヒントも押せないまま）", await q.locator(".why button:disabled").count() === ng1 && ng1 >= 1 && await q.locator("#hint:disabled").count() === 1 && (await q.textContent("#hintbox")).includes("消しました"));
     await why(q); await q.waitForSelector(".verdict");
