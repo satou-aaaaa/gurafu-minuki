@@ -567,7 +567,9 @@ function startRun(mode, opt) {
 let cur = null;
 const same = (r) => r && cur && r.date === cur.date && r.id === cur.id && r.res.length === cur.i && r.list[cur.i] === cur.tag; // 保存した進み具合が、この画面と同じ問題か
 // 途中の保存：別のタブで使ったヒント・まちがいも減らさない（多いほう・合わせたほうを残す）
-function keep() { save((s) => { const r = s.runs[MODE]; if (!same(r)) return; const was = r.cur && r.cur.i === cur.i && r.cur.tag === cur.tag ? r.cur : { wrong: [], hints: 0 }; cur.hints = Math.max(cur.hints, was.hints || 0); for (const w of was.wrong || []) if (!cur.wrong.includes(w)) cur.wrong.push(w); cur.step = Math.max(cur.step, was.step || 1); for (const w of was.w2 || []) if (!cur.w2.includes(w)) cur.w2.push(w); if (!cur.jd && was.jd) cur.jd = was.jd; if (was.h2) cur.h2 = 1; r.cur = { i: cur.i, tag: cur.tag, wrong: cur.wrong.slice(), hints: cur.hints, step: cur.step, w2: cur.w2.slice(), jd: cur.jd, h2: cur.h2 ? 1 : 0 }; }); }
+// まちがえた・ヒントを使ったその時に復習へ入れる（とことんで降りる・閉じるなど、解き終えずにやめても残る。2026-11-11 CodeRabbit）
+function early() { if (cur && !cur.done && ((cur.wrong && cur.wrong.length) || cur.hints || (cur.w2 && cur.w2.length))) Depth.mark(cur.tag, 1, cur.P.name); }
+function keep() { early(); save((s) => { const r = s.runs[MODE]; if (!same(r)) return; const was = r.cur && r.cur.i === cur.i && r.cur.tag === cur.tag ? r.cur : { wrong: [], hints: 0 }; cur.hints = Math.max(cur.hints, was.hints || 0); for (const w of was.wrong || []) if (!cur.wrong.includes(w)) cur.wrong.push(w); cur.step = Math.max(cur.step, was.step || 1); for (const w of was.w2 || []) if (!cur.w2.includes(w)) cur.w2.push(w); if (!cur.jd && was.jd) cur.jd = was.jd; if (was.h2) cur.h2 = 1; r.cur = { i: cur.i, tag: cur.tag, wrong: cur.wrong.slice(), hints: cur.hints, step: cur.step, w2: cur.w2.slice(), jd: cur.jd, h2: cur.h2 ? 1 : 0 }; }); }
 const missOf = () => cur.wrong.length + cur.hints + cur.w2.length; // 2段目（どんな手口？）のまちがいも数える
 // 押せる所の印：同じ id の四角（左右のグラフ）は同じ答え
 const zoneName = (z) => G.ZONE[z.id] + (z.sub ? `（${z.sub}）` : "");

@@ -305,6 +305,7 @@ try {
     check("自信のボタンを押すと ✓ が出る（色だけで分けない）", (await q.getAttribute("#dp-sure", "aria-pressed")) === "true" && (await q.textContent("#dp-sure")).includes("✓"));
     { const c = await curOf(q); await q.click(`[data-z="${c.ch.find((x) => !c.ans.includes(x))}"]`); }
     check("自信ありでまちがえると、知らせに「思いこみ」と出て、自信は変えられない", (await q.textContent("#msg")).includes("思いこみ") && await q.locator("#dp-sure:disabled").count() === 1);
+    check("まちがえたその時に復習へ入る（解き終えずにやめても残る。2026-11-11 CodeRabbit）", await q.evaluate(() => { const d = JSON.parse(localStorage.getItem("gurafu-depth") || "{}"); return !!(d.rv && d.rv[__gm.cur().tag]); }));
     await q.click(`[data-z="${(await curOf(q)).ans[0]}"]`);
     check("ウソを見抜くと、2段目「どんな手口？」が3つ出る（押せる所は44px以上）", await q.locator(".why button").count() === 3 && await q.locator(".verdict").count() === 0 && (await q.$$eval(".why button", (b) => b.every((x) => x.getBoundingClientRect().height >= 44))));
     check("2段目の間は、グラフの押せる所は押せない", await q.evaluate(() => [...document.querySelectorAll("[data-z]")].every((b) => b.disabled)));
