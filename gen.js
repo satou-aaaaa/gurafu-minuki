@@ -90,6 +90,13 @@
   // 手口帳：正しいグラフは3つを1つにまとめる
   const BOOK = ["cut", "area", "pie", "period", "pair", "sample", "cutl", "ratio", "multi", "ok"];
   const bookId = (id) => (BY[id] && BY[id].ok ? "ok" : id);
+  // 2段目「どんな手口？」の分け方（KINDS とは別に置く。KINDS を変えると過去の日の問題が変わるため）。手口を足したら GRP にも足す
+  const GROUPS = {
+    scale: { name: "目盛りのごまかし", sub: "目盛りを省く・左右でそろえない・引きのばす" },
+    pick: { name: "切り取り・比べ方", sub: "期間・聞いた人・比べる数を都合よく選ぶ" },
+    whole: { name: "形と合計", sub: "絵の面積・%の合計で量をまちがえさせる" },
+  };
+  const GRP = { cut: "scale", pair: "scale", cutl: "scale", period: "pick", sample: "pick", ratio: "pick", area: "whole", pie: "whole", multi: "whole" };
 
   // ---- 1つずつの作り方：{ head:見出し, title, unit, spec:見せるグラフ, fix:直したグラフ, note, fixNote, real:本当は } ----
   function barVals(R, n, lo, hi, spread) { const base = roundTo(ri(R, lo, hi), magOf(hi)); return Array.from({ length: n }, () => Math.max(1, roundTo(base * (1 + ri(R, -spread[0], spread[1]) / 100), magOf(base) >= 5 ? magOf(base) : 1))); }
@@ -204,7 +211,7 @@
     if (!k) throw new Error("知らない種類: " + id);
     const p = MAKE[id](rng(seedOf(tag)));
     const zones = zonesOf(p.spec);
-    return Object.assign(p, { tag, kind: id, lv: k.lv, name: k.name, ans: k.ans, look: k.look, why: k.why, src: k.src.map((s) => SRC[s]), ok: !!k.ok, zones });
+    return Object.assign(p, { tag, kind: id, lv: k.lv, name: k.name, ans: k.ans, look: k.look, why: k.why, src: k.src.map((s) => SRC[s]), ok: !!k.ok, grp: k.ok ? null : GRP[id] || null, zones });
   }
   // 今日の5問（やさしい2・ふつう2・むずかしい1）
   function dailyTags(date) {
@@ -295,6 +302,6 @@
     return "グラフ";
   }
 
-  const GRAPH = { LV, KINDS, BY, BOOK, bookId, ZONE, SRC, kindsOf, seedOf, rng, make, dailyTags, hardTags, svg, zonesOf, descOf, axis, fmt, pickN, W, H, _T: { BAR, LINE, ASK, SAT, PICT, RATIO } };
+  const GRAPH = { LV, KINDS, BY, BOOK, bookId, GROUPS, GRP, ZONE, SRC, kindsOf, seedOf, rng, make, dailyTags, hardTags, svg, zonesOf, descOf, axis, fmt, pickN, W, H, _T: { BAR, LINE, ASK, SAT, PICT, RATIO } };
   if (typeof module !== "undefined" && module.exports) module.exports = GRAPH; else root.GRAPH = GRAPH;
 })(typeof self !== "undefined" ? self : this);
