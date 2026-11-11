@@ -346,6 +346,21 @@ try {
     await q.evaluate(() => { const d = JSON.parse(localStorage.getItem("gurafu-depth")); d.rv["nai|1"] = { s: 0, due: "2026-01-01", t: 1 }; d.rv["constructor|x"] = { s: 0, due: "2026-01-01", t: 2 }; localStorage.setItem("gurafu-depth", JSON.stringify(d)); });
     await q.goto(url); await q.waitForTimeout(150);
     check("作り直せない鍵（無い手口・constructor）は復習に数えず、ホームも出る", await q.locator("#go-d").count() === 1 && await q.locator("#go-r").count() === 0);
+    // 復習の途中でまちがえて日の来た問題が0になっても続きから戻れる・古い画面は復習の段を戻さない・別のタブで2段目へ進んだらこの画面も2段目（2026-11-11 CodeRabbit）
+    await q.evaluate(() => { const d = JSON.parse(localStorage.getItem("gurafu-depth")); d.rv = { "cut|dp1": { s: 0, due: "2026-01-01", t: 3 } }; localStorage.setItem("gurafu-depth", JSON.stringify(d)); });
+    await q.goto(url); await q.waitForTimeout(150); await q.click("#go-r");
+    { const c = await curOf(q); await q.click(`[data-z="${c.ch.find((x) => !c.ans.includes(x))}"]`); }
+    await q.goto(url); await q.waitForTimeout(150);
+    check("復習の途中でまちがえて、日の来た問題が0になっても、ホームの「復習の続きから」で戻れる", ((await q.locator("#go-r").count()) ? await q.textContent("#go-r") : "").includes("続きから"));
+    await q.click("#go-r");
+    check("復習の続きは同じ問題・まちがえた所はそのまま", await q.evaluate(() => __gm.cur().tag) === "cut|dp1" && await q.locator("[data-z].ng").count() === 1);
+    await q.evaluate(() => { __gm.save((s) => { s.runs.p = { mode: "p", date: __gm.todayKey(), list: ["cut|dq1"], res: [], cur: null, id: "dq" }; }); __gm.play("p"); });
+    await q.evaluate(() => __gm.save((s) => { s.runs.p.cur = { i: 0, tag: "cut|dq1", wrong: [], hints: 0, step: 2, w2: [] }; }));
+    await q.click("#hint"); await q.waitForTimeout(100);
+    check("別のタブで2段目へ進んでいたら、この画面も2段目「どんな手口？」になる", await q.locator(".why button").count() === 3 && await q.evaluate(() => __gm.cur().step) === 2);
+    await q.evaluate(() => { __gm.save((s) => { s.runs.p.res.push({ m: 0 }); s.runs.p.cur = null; }); const d = JSON.parse(localStorage.getItem("gurafu-depth")); d.rv["cut|dq1"] = { s: 2, due: "2099-01-01", t: 9 }; localStorage.setItem("gurafu-depth", JSON.stringify(d)); });
+    await q.click("#hint"); await q.waitForTimeout(50);
+    check("別のタブで先に進んだ古い画面でヒントを押しても、復習の段は戻らない", await q.evaluate(() => JSON.parse(localStorage.getItem("gurafu-depth")).rv["cut|dq1"].s) === 2);
     await q.context().close();
   }
 
