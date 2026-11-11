@@ -350,8 +350,9 @@ try {
     await q.evaluate(() => { const d = JSON.parse(localStorage.getItem("gurafu-depth")); d.rv = { "cut|dp1": { s: 0, due: "2026-01-01", t: 3 } }; localStorage.setItem("gurafu-depth", JSON.stringify(d)); });
     await q.goto(url); await q.waitForTimeout(150); await q.click("#go-r");
     { const c = await curOf(q); await q.click(`[data-z="${c.ch.find((x) => !c.ans.includes(x))}"]`); }
+    await q.evaluate(() => __gm.save((s) => { s.runs.r.date = "2026-01-02"; }));
     await q.goto(url); await q.waitForTimeout(150);
-    check("復習の途中でまちがえて、日の来た問題が0になっても、ホームの「復習の続きから」で戻れる", ((await q.locator("#go-r").count()) ? await q.textContent("#go-r") : "").includes("続きから"));
+    check("復習の途中でまちがえて、日の来た問題が0になっても・日が替わっても、ホームの「復習の続きから」で戻れる", ((await q.locator("#go-r").count()) ? await q.textContent("#go-r") : "").includes("続きから"));
     await q.click("#go-r");
     check("復習の続きは同じ問題・まちがえた所はそのまま", await q.evaluate(() => __gm.cur().tag) === "cut|dp1" && await q.locator("[data-z].ng").count() === 1);
     await q.evaluate(() => { __gm.save((s) => { s.runs.p = { mode: "p", date: __gm.todayKey(), list: ["cut|dq1"], res: [], cur: null, id: "dq" }; }); __gm.play("p"); });
