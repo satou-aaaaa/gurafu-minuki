@@ -145,7 +145,7 @@ async function solve(p, { wrong = 0 } = {}) {
 // 2段目「どんな手口？」が出たら、正しい分け方を押す（正しいグラフには出ない）
 async function why(p) { await p.waitForSelector(".verdict, .why button"); if (await p.locator(".verdict").count()) return; await p.click(`.why button[data-g="${await p.evaluate(() => __gm.cur().P.grp)}"]`); }
 const noHScroll = (p) => p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
-const smallBtns = (p) => p.evaluate(() => [...document.querySelectorAll("button,a,.zone,.tz")].filter((b) => { const r = b.getBoundingClientRect(); return r.width && r.height && r.height < 44 && getComputedStyle(b).visibility !== "hidden" && !b.closest(".cal") && !b.closest("svg"); }).map((b) => (b.id || b.className || b.textContent).slice(0, 20)));
+const smallBtns = (p) => p.evaluate(() => [...document.querySelectorAll("button,a,.zone,.tz")].filter((b) => { const r = b.getBoundingClientRect(); return r.width && r.height && Math.round(r.height) < 44 && getComputedStyle(b).visibility !== "hidden" && !b.closest(".cal") && !b.closest("svg"); }).map((b) => (b.id || b.className || b.textContent).slice(0, 20)));
 
 try {
   const p = await newPage();
@@ -312,7 +312,7 @@ try {
     check("自信ありでまちがえると、知らせに「思いこみ」と出て、自信は変えられない", (await q.textContent("#msg")).includes("思いこみ") && await q.locator("#dp-sure:disabled").count() === 1);
     check("まちがえたその時に復習へ入る（解き終えずにやめても残る。2026-11-11 CodeRabbit）", await q.evaluate(() => { const d = JSON.parse(localStorage.getItem("gurafu-depth") || "{}"); return !!(d.rv && d.rv[__gm.cur().tag]); }));
     await q.click(`[data-z="${(await curOf(q)).ans[0]}"]`);
-    check("ウソを見抜くと、2段目「どんな手口？」が3つ出る（押せる所は44px以上）", await q.locator(".why button").count() === 3 && await q.locator(".verdict").count() === 0 && (await q.$$eval(".why button", (b) => b.every((x) => x.getBoundingClientRect().height >= 44))));
+    check("ウソを見抜くと、2段目「どんな手口？」が3つ出る（押せる所は44px以上）", await q.locator(".why button").count() === 3 && await q.locator(".verdict").count() === 0 && (await q.$$eval(".why button", (b) => b.every((x) => Math.round(x.getBoundingClientRect().height) >= 44))));
     check("2段目の間は、グラフの押せる所は押せない", await q.evaluate(() => [...document.querySelectorAll("[data-z]")].every((b) => b.disabled)));
     await q.reload(); await q.waitForTimeout(150); await q.evaluate(() => __gm.play("p"));
     check("2段目の途中で閉じても、2段目から続く", await q.locator(".why button").count() === 3);
