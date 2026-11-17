@@ -240,8 +240,9 @@ try {
   await solve(p); await p.click("#next");
   await p.reload(); await p.waitForTimeout(150);
   check("とことん：閉じても続きから", (await p.textContent("#go-e")).includes("続きから"));
-  await p.click("#go-e"); await solve(p); await p.click("#next");
-  await p.click("#quit");
+  await p.click("#go-e"); await solve(p);
+  check("とことんで見抜いた直後も「ここで降りる」が出ていて、数は見抜いた分を入れた4問", await p.locator("#quit").isVisible() && (await p.textContent("#quit")).includes("4問で終える"), await p.textContent("#quit"));
+  await p.click("#quit"); // 次へを押す前に降りる（前は隠れていて押せなかった）
   const s4 = await mem(p);
   check("とことん：「ここで降りる」で終わり、一度で見抜いた数が自己ベスト（今日の記録は増えない）", s4.ebest === 2 && !s4.runs.e && Object.keys(s4.days).length === 1 && (await p.textContent("#eres")).includes("4問"), JSON.stringify([s4.ebest, (await p.textContent("#eres"))]));
   // とことんの並びを何百回作る：1回の中で同じ問題を出さず、続けて同じ手口を出さない
@@ -385,6 +386,10 @@ try {
   const sample = { "gurafu-v1": JSON.stringify({ v: 1, tut: true, days: { "2026-11-07": { m: [0, 1, 0, 0, 2], k: ["cut", "area", "period", "pair", "ratio"] } }, hdays: {}, adays: {}, dex: { cut: 1, area: 1, period: 1, pair: 1, ratio: 1 }, runs: {}, kofi: {}, ach: {}, ebest: 7, t: 1 }) };
   await checkTransfer({ browser, url, game: "gurafu-minuki", sample, check, open: async (pg) => { if (await pg.locator("#howto[open]").count()) await pg.click("#howto-ok"); } });
 } catch (e) { check("引き継ぎの検査が最後まで動く", false, e.message.split("\n")[0]); }
+{ // 知らせ（.toast）は下のボタンを塞がない（shared-workflows incidents/2026-11-17-known-game-bugs-spread.md）
+  const pt = await browser.newPage(); await pt.goto(url);
+  check("知らせ（.toast）が出ていても、その下のボタンを押せる（pointer-events:none）", await pt.evaluate(() => { const d = document.createElement("div"); d.className = "toast"; document.body.appendChild(d); const v = getComputedStyle(d).pointerEvents; d.remove(); return v === "none"; }));
+  await pt.close(); }
 await browser.close();
 server.close();
 // 深さの部品（shared-workflows template/qa/depth-check.mjs）
