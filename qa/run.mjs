@@ -164,6 +164,10 @@ try {
   await p.click("#howto-ok");
   { const q = await newPage(); await q.keyboard.press("Escape"); await q.waitForTimeout(100); await q.reload(); await q.waitForTimeout(150);
     check("遊び方は Esc で閉じても次から出ない", await q.locator("#howto[open]").count() === 0); await q.context().close(); }
+  { const c = await browser.newContext({ viewport: { width: 390, height: 800 } }); await c.addInitScript(() => { window.__origSetItem = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error("full"); }; }); const q = await newPage(390, c); await closeHow(q); await q.click("#go-e"); await solve(q); await q.waitForTimeout(2000);
+    const warn = await q.locator("#savewarn").count(), txt = warn ? await q.textContent("#savewarn") : "";
+    await q.evaluate(() => { Storage.prototype.setItem = window.__origSetItem; }); for (let i = 0; i < 2; i++) { await q.click("#next"); await solve(q); } await q.waitForTimeout(100);
+    check("保存できないと帯 #savewarn がちょうど1つ出て2秒たっても残り、保存できるようになって次の問題を解くと消える（復習の控え depth.js も書けてから）", warn === 1 && txt.includes("保存できませんでした") && await q.locator("#savewarn").count() === 0, `帯 ${warn}`); await c.close(); }
   check("ホームに見抜くポイントと、上級・とことん・練習が最初からある", (await p.textContent(".points")).includes("0から") && await p.locator("#go-h:not([disabled])").count() === 1 && await p.locator("#go-e").count() === 1 && await p.locator("#go-p").count() === 1);
   await p.click("#go-d");
   const tags = await p.evaluate(() => __gm.load().runs.d.list);
