@@ -172,7 +172,7 @@ dialog#howto h2{margin:0 0 10px}
 dialog#howto ol{padding-left:1.3em;margin:0 0 12px;line-height:1.8}
 dialog#howto p{margin:0 0 10px;font-size:.9rem;line-height:1.7;color:var(--ink2)}
 dialog#howto a{color:var(--red2);min-height:44px;display:inline-flex;align-items:center}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;z-index:9;box-shadow:0 6px 20px #0005;max-width:90%;text-align:center;font-size:1rem}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;z-index:9;box-shadow:0 6px 20px #0005;max-width:90%;text-align:center;font-size:1rem}
 footer{margin-top:auto;text-align:center;font-size:.8rem;color:var(--ink2);display:flex;gap:4px 14px;justify-content:center;flex-wrap:wrap}
 footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:center}
 /* 色の見分けを助ける：見抜いた所・ちがう所の印を大きく、枠を太く */
@@ -438,7 +438,8 @@ function tidy(s) {
   return s;
 }
 // 保存の前に読み直す（別のタブで進めた記録を消さない）
-function save(fn) { const s = load(); fn(s); s.t = Math.max(Date.now(), (s.t || 0) + 1); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
+function saveWarn(on) { let b = document.getElementById("savewarn"); const W = "この端末に記録を保存できませんでした。ページを開き直すと、いまの記録が消えます"; if (!on) { if (b) b.remove(); return; } if (b) return; b = document.createElement("div"); b.id = "savewarn"; b.setAttribute("role", "status"); b.textContent = W; b.style.cssText = "position:sticky;top:0;z-index:9999;padding:8px 12px;background:#fff3cd;color:#000;font-size:15px;line-height:1.5;text-align:center;pointer-events:none;border-bottom:2px solid #8a6d00"; (document.body || document.documentElement).prepend(b); } // 帯は画面のいちばん上に場所を取り（ボタンに重ならない）、帯そのものが role=status で読み上げられる。保存できたら帯を消す（黙って記録が消えないように）
+function save(fn) { const s = load(); fn(s); s.t = Math.max(Date.now(), (s.t || 0) + 1); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; saveWarn(false); } catch (e) { mem = j; saveWarn(true); } return s; }
 function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
 const playedDays = (s) => new Set([...Object.keys(s.days), ...Object.keys(s.adays)]).size;
 const solvedAll = (s) => Object.values(s.dex).reduce((a, b) => a + (+b || 0), 0);
@@ -615,7 +616,7 @@ function play() {
   document.querySelectorAll("[data-z]").forEach((b) => (b.onclick = () => choose(b.dataset.z, b)));
   Depth.bindSure(tag);
   if ($("hint")) $("hint").onclick = hint;
-  if ($("quit")) $("quit").onclick = () => { if (cur && cur.done) return; endFinish(); };
+  if ($("quit")) $("quit").onclick = () => endFinish();
   if (cur.step === 2) askWhy(); else paint();
   toTop();
   // 画面を作り直すとフォーカスが body に戻るので、問題へ移す（キーボード・読み上げで続けられる）
@@ -689,9 +690,10 @@ function solved() {
   const m = missOf(), st = starsOf(m);
   Depth.mark(cur.tag, m, P.name); // まちがい・ヒントがあれば復習へ、復習中なら次の間へ
   const r = s.runs[MODE], fin = r && r.mode !== "e" && r.res.length >= r.list.length;
+  if ($("quit") && r && r.mode === "e") $("quit").textContent = `ここで降りる（${r.res.length}問で終える）`; // 正解した分も数える
   document.querySelectorAll("[data-z]").forEach((b) => { b.disabled = true; if (P.ans.includes(b.dataset.z)) b.classList.add("hit"); });
   document.querySelectorAll(".why button").forEach((b) => (b.disabled = true));
-  if ($("hint")) $("hint").disabled = true; if ($("quit")) $("quit").hidden = true;
+  if ($("hint")) $("hint").disabled = true;
   $("hintbox").innerHTML = ""; $("msg").className = "msg"; $("msg").textContent = "";
   const fix = P.fix ? `<p class="fixcap">${P.kind === "multi" ? "棒グラフで正しくかくと" : P.kind === "sample" ? "かたよりなく聞くと（架空）" : P.kind === "ratio" ? "人口1万人あたりにすると" : "正しくかくと"}${P.fixUnit ? `（単位：${esc(P.fixUnit)}）` : ""}</p><div class="fixbox">${G.svg(P.fix)}</div>${P.fixNote ? `<p class="fixcap">${esc(P.fixNote)}</p>` : ""}` : "";
   $("after").innerHTML = `<div class="verdict" role="status" id="verdict">
